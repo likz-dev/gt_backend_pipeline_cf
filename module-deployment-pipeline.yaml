@@ -65,7 +65,14 @@ Resources:
                   - ecr:InitiateLayerUpload
                   - ecr:UploadLayerPart
                   - ecr:CompleteLayerUpload
-
+              - Resource: !Sub arn:aws:codebuild:${AWS::Region}:${AWS::AccountId}:report-group/*
+                Effect: Allow
+                Action:
+                  - codebuild:CreateReportGroup
+                  - codebuild:CreateReport
+                  - codebuild:UpdateReport
+                  - codebuild:BatchPutTestCases
+                  - codebuild:BatchPutCodeCoverages
   CodePipelineServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -119,20 +126,38 @@ Resources:
         BuildSpec: |
           version: 0.2
           phases:
+            install:
+              commands:
+                - apt-get update
+                - apt-get install zip
             pre_build:
               commands:
-                - $(aws ecr get-login --no-include-email)
-                - TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
-                - IMAGE_URI="${REPOSITORY_URI}:${TAG}"
+                - pip install pytest==3.6.3
+                - pip install pyflakes==2.0.0
+                - export TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
+                - export IMAGE_URI="${REPOSITORY_URI}:${TAG}"
             build:
               commands:
+                - pip install -r requirements.txt
+                - pyflakes ./**/*.py
+                - export PYTHONPATH=./source
+                - pytest --junitxml=reports/pytest_results.xml
                 - docker build --tag "$IMAGE_URI" .
             post_build:
               commands:
+                - pip install awscli
+                - echo Logging in to Amazon ECR...
+                - $(aws ecr get-login --no-include-email)
                 - docker push "$IMAGE_URI"
                 - printf '[{"name":"%s","imageUri":"%s"}]' "$CONTAINER_NAME" "$IMAGE_URI" > images.json
           artifacts:
             files: images.json
+          reports:
+            pytest_reports:
+              files:
+                - pytest_results.xml
+              base-directory: reports
+              file-format: JUNITXML
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
         Image: aws/codebuild/docker:17.09.0
