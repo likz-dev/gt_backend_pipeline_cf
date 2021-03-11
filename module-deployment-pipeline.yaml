@@ -127,21 +127,22 @@ Resources:
           version: 0.2
           phases:
             install:
+              runtime-versions:
+                docker: 19
               commands:
-                - apt-get update
-                - apt-get install zip
+                - yum install zip -y
+                - yum install python3 -y
             pre_build:
               commands:
-                - pip install pytest==3.6.3
-                - pip install pyflakes==2.0.0
                 - export TAG="$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | head -c 8)"
                 - export IMAGE_URI="${REPOSITORY_URI}:${TAG}"
+                - python3 --version
             build:
               commands:
                 - pip install -r requirements.txt
                 - pyflakes ./**/*.py
                 - export PYTHONPATH=./source
-                - pytest --junitxml=reports/pytest_results.xml
+                - python3 -m pytest --junitxml=reports/pytest_results.xml
                 - docker build --tag "$IMAGE_URI" .
             post_build:
               commands:
@@ -160,8 +161,9 @@ Resources:
               file-format: JUNITXML
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL
-        Image: aws/codebuild/docker:17.09.0
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:3.0
         Type: LINUX_CONTAINER
+        PrivilegedMode: true
         EnvironmentVariables:
           - Name: AWS_DEFAULT_REGION
             Value: !Ref AWS::Region
