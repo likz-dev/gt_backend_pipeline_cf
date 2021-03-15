@@ -25,6 +25,15 @@ Parameters:
   Repository:
     Type: String
 
+  DBCredentialsARN:
+    Type: String
+
+  Auth0SecretsARN:
+    Type: String
+
+  FlaskSecretsARN:
+    Type: String
+
 Resources:
   CodeBuildServiceRole:
     Type: AWS::IAM::Role
@@ -42,6 +51,16 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
+              - Resource:
+                  - !Ref DBCredentialsARN
+                  - !Ref Auth0SecretsARN
+                  - !Ref FlaskSecretsARN
+                Effect: Allow
+                Action:
+                  - secretsmanager:GetResourcePolicy
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:ListSecretVersionIds
               - Resource: "*"
                 Effect: Allow
                 Action:

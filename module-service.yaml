@@ -22,6 +22,15 @@ Parameters:
   Subnets:
     Type: List<AWS::EC2::Subnet::Id>
 
+  DBCredentialsARN:
+    Type: String
+
+  Auth0SecretsARN:
+    Type: String
+
+  FlaskSecretsARN:
+    Type: String
+
 Resources:
   TaskExecutionRole:
     Type: 'AWS::IAM::Role'
@@ -37,8 +46,22 @@ Resources:
           - 'sts:AssumeRole'
       ManagedPolicyArns:
       - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+      Policies:
+        - PolicyName: root
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Resource:
+                  - !Ref DBCredentialsARN
+                  - !Ref Auth0SecretsARN
+                  - !Ref FlaskSecretsARN
+                Effect: Allow
+                Action:
+                  - secretsmanager:GetResourcePolicy
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:ListSecretVersionIds
 
-            
   LogGroup:
     Type: AWS::Logs::LogGroup
     Properties:

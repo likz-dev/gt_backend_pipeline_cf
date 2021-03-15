@@ -34,6 +34,40 @@ Parameters:
     Description: >
       The S3 bucket from which to fetch the templates used by this stack.
 
+  DatabaseName:
+    Type: String
+    Default: postgres
+    Description: Name of database
+
+  DatabaseUsername:
+    Type: String
+    Description: Username for database
+
+  DatabasePassword:
+    NoEcho: true
+    Type: String
+    Description: Password for database
+
+  Auth0ClientID:
+    NoEcho: true
+    Type: String
+    Description: Auth0 client id
+
+  Auth0ClientSecret:
+    NoEcho: true
+    Type: String
+    Description: Auth0 client secret
+
+  Auth0APIBaseURL:
+    NoEcho: true
+    Type: String
+    Description: Auth0 base API
+
+  FlaskSessionSecret:
+    NoEcho: true
+    Type: String
+    Description: Flask session secret
+
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterLabels:
@@ -59,6 +93,19 @@ Metadata:
           - TemplateBucket
 
 Resources:
+  Secrets:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "https://s3.amazonaws.com/${TemplateBucket}/module-secrets-manager.yaml"
+      Parameters:
+        DatabaseName: !Ref DatabaseName
+        DatabaseUsername: !Ref DatabaseUsername
+        DatabasePassword: !Ref DatabasePassword
+        Auth0ClientID: !Ref Auth0ClientID
+        Auth0ClientSecret: !Ref Auth0ClientSecret
+        Auth0APIBaseURL: !Ref Auth0APIBaseURL
+        FlaskSessionSecret: !Ref FlaskSessionSecret
+
   Cluster:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -81,6 +128,9 @@ Resources:
         GitHubRepo: !Ref GitHubRepo
         GitHubBranch: !Ref GitHubBranch
         Repository: !GetAtt ECR.Outputs.Repository
+        DBCredentialsARN: !GetAtt Secrets.Outputs.DBCredentialsARN
+        Auth0SecretsARN: !GetAtt Secrets.Outputs.Auth0SecretsARN
+        FlaskSecretsARN: !GetAtt Secrets.Outputs.FlaskSecretsARN
 
   LoadBalancer:
     Type: AWS::CloudFormation::Stack
@@ -110,6 +160,9 @@ Resources:
         SourceSecurityGroup: !GetAtt LoadBalancer.Outputs.SecurityGroup
         Subnets: !GetAtt VPC.Outputs.Subnets
         Repository: !GetAtt ECR.Outputs.Repository
+        DBCredentialsARN: !GetAtt Secrets.Outputs.DBCredentialsARN
+        Auth0SecretsARN: !GetAtt Secrets.Outputs.Auth0SecretsARN
+        FlaskSecretsARN: !GetAtt Secrets.Outputs.FlaskSecretsARN
 
 Outputs:
   ServiceUrl:
