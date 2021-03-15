@@ -34,6 +34,10 @@ Parameters:
     Description: >
       The S3 bucket from which to fetch the templates used by this stack.
 
+  DatabaseHost:
+    Type: String
+    Description: Hostname for database
+
   DatabaseName:
     Type: String
     Default: postgres
@@ -98,6 +102,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "https://s3.amazonaws.com/${TemplateBucket}/module-secrets-manager.yaml"
       Parameters:
+        DatabaseHost: !Ref DatabaseHost
         DatabaseName: !Ref DatabaseName
         DatabaseUsername: !Ref DatabaseUsername
         DatabasePassword: !Ref DatabasePassword
