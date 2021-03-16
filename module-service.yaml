@@ -32,20 +32,18 @@ Parameters:
     Type: String
 
 Resources:
-  TaskExecutionRole:
+  TaskRole:
     Type: 'AWS::IAM::Role'
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
-        - Effect: Allow
-          Principal:
-            Service:
-            - 'ecs-tasks.amazonaws.com'
-          Action:
-          - 'sts:AssumeRole'
-      ManagedPolicyArns:
-      - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
+          - Effect: Allow
+            Principal:
+              Service:
+                - 'ecs-tasks.amazonaws.com'
+            Action:
+              - 'sts:AssumeRole'
       Policies:
         - PolicyName: root
           PolicyDocument:
@@ -61,6 +59,20 @@ Resources:
                   - secretsmanager:GetSecretValue
                   - secretsmanager:DescribeSecret
                   - secretsmanager:ListSecretVersionIds
+  TaskExecutionRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - 'ecs-tasks.amazonaws.com'
+          Action:
+          - 'sts:AssumeRole'
+      ManagedPolicyArns:
+      - 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy'
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -94,6 +106,7 @@ Resources:
       Memory: 2048
       Cpu: 1024
       NetworkMode: "awsvpc"
+      TaskRoleArn: !Ref TaskRole
       ExecutionRoleArn: !Ref TaskExecutionRole
       ContainerDefinitions:
         - Name: !Join ['-', [!Ref Cluster, !Ref 'AWS::AccountId', 'Container']]
